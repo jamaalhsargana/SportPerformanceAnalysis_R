@@ -1,0 +1,256 @@
+
+
+---
+title: "Portfolio"
+output: pdf_document
+---
+
+## Introduction
+
+This markdown file covers all the details regarding the portfolio assignement for 'MATPMDB'. The assignment is individual work of Jamal Sargana.
+
+To perform a detailed statistical analysis, the dataset used here is about a football team Arsenal, a team that I have been following from  a very young age and following all of their matches regularly in all competition. Arsenal is a London based team and is considered among top 3 teams in UK. 
+<br>
+
+<div style="text-align: center;">
+![Emirates Stadium, Arsenal Home ground, North London](arsenal_stadium.jpg){width=80%}
+</div>
+<br>
+
+The image above shows the Home stadium of Arsenal that was built in 2005, the time when there were considered as the best team in England. Emirates stadium has hosted top class matches over the decade and the atmosphere fans and aura has always influenced the outcomes for Arsenal. But in the past decade, there hasn't been such performances that were once expected from Arsenal and this is the reason they are now regarded as the "Sleeping Giants" of England. However, it has motivated me to collect the dataset for th games they have played and how well have they performed during the 2021 campaign.  
+
+Having said that, we would like to make a statistical analysis using a data set that includes information about the matches arsenal played on their home ground and the points they obtained in those matches. 
+
+
+## The DataSet
+
+Lets talk about the dataset we would be using for this assignment. The dataset comprises of 23 rows (entries) and 6 columns (features) and includes features like date, teams arsenal played against, scoreline, home advantage and Total points. Dataset is shown in detail below
+
+
+```{r}
+data <- read.table("dataset.txt",header=TRUE,sep="\t")
+data
+```
+
+Since the dataset does not include any information that would help in figuring out if Arsenal won, we will have another column added to the data named 'Result'. This includes value 1 or 0 (WIN or No-WIN).
+<br>
+Note: Result of the match can be WIN, DRAW or LOST point for each result is 3,1 and 0 respectively.  
+
+
+```{r}
+Result <- ifelse(data$Points == 3, 'YES', 'NO')
+data$Result <- ifelse(data$Points == 3, 1, 0)
+(Result)
+```
+
+<br>
+<br>
+
+## Null Hypothesis
+
+Before moving ahead with our statistical test it is important to define our null hypothesis. Defining Null Hypothesis is the first step when moving on with student T-Test. 
+
+$$Null Hypothesis(H_0):prob(win|home) = prob(win|away) $$
+
+
+Hypothesis defines that Home advantage does not have a significant effect on the outcome of matches. This means the mean difference in outcomes (win vs loss) between home and away games is actually the same.
+
+
+Let us also define the alternate hypothesis that is represented by the equation below
+
+$$Alternate Hypothesis(H_a):prob(win|home) != prob(win|away) $$
+
+Alternative hypothesis defines that home advantage does have a significant effect on the outcome of matches. This means the mean difference in outcomes between home and away games is actually different.
+
+
+## Student t-test
+
+We will first start with a student t-test that would help us determine whether the mean outcome (win = 1, loss = 0) differs significantly between home and away games. We will be using two sample t-test because we have two different groups of data: home_games_result and away_games_result. These groups are independent because the outcome of a home game (whether Arsenal wins, loses, or draws) is not dependent on the outcome of an away game. Each set of games has its own observations.
+
+```{r}
+home_games_result <- data$Result[data$Home_adv == 1]
+away_games_result <- data$Result[data$Home_adv == 0]
+t_test_result <- t.test(home_games_result, away_games_result)
+t_test_result
+```
+
+So the result of the t-test provides us with imprtant values to look at. A t-value of -0.83045 reflects upon the difference between the means relative to the spread of the data, showing that the value is quite small and not much difference. Most importantly the p-value of 0.4161 shows that, since the value is way above then 0.05, there is not a significance difference between the results Arsenal gets at home or away games. Hence, we fail to reject the null hypothesis that was defined above. 
+
+<br>
+
+Now lets try to figure out another factor that has always been very talked about every season for Arsenal. It has been followed in the past number of years that Arsenal has been performing well during the first half of the season and would be able to gather more points than last couple of months of a particular season. From the data we have gathered lets perform a t-test (2 sample t-test) and interpret from the result if we can accept the statement or not. 
+
+Lets us define the hypothesis
+
+$$Null Hypothesis(H_0):prob(Win|SeasonStart) = prob(Win|SeasonEnd) $$
+
+```{r}
+# We split the data on a specific date, i.e "06/03/2021"
+before_date <- data$Points[as.Date(data$Date, format="%d/%m/%Y") < as.Date("06/03/2021", format="%d/%m/%Y")]
+after_date <- data$Points[as.Date(data$Date, format="%d/%m/%Y") >= as.Date("06/03/2021", format="%d/%m/%Y")]
+
+t_test_result <- t.test(before_date, after_date)
+t_test_result
+
+```
+
+The results of this particular test is shows the p-value of 0.6117 which again is much greater than 0.05. Hence we again fail to reject the null hypothesis that says there is no significant difference between the results that arsenal obtained before and after start of march for the year 2021.
+
+<br>
+<br>
+
+## Data Visulaisations
+
+Here we have attempted to visulize the dataset and distinguish between the wins and loss  on the basis of home and away matches. The graph below provides clear information in a unique manner about the dataset.
+
+
+*** Stacked bar plot ***
+```{r}
+(library(ggplot2))
+data$HomeAdv <- ifelse(data$Home_adv == 1, "Home", "Away")
+data$Result <- ifelse(data$Points == 3, "Win", "Loss")
+ggplot(data, aes(x = HomeAdv, fill = Result)) +
+  geom_bar() +
+  labs(title = "Proportion of Wins and Losses by Home and Away Games",
+       x = "Home/Away",
+       y = "Count",
+       fill = "Result") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Win" = "blue", "Loss" = "red"))
+```
+
+
+The scatter plot shows a trend of the points obtained by arsenal on home and away games according to the month of the campaign. The variation can be dipicted through a single plot here.
+
+
+*** Scatter line plot ***
+```{r}
+data$Date <- as.Date(data$Date, format = "%d/%m/%Y")
+ggplot(data, aes(x = Date, y = Points, color = HomeAdv)) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE) + 
+  labs(title = "Points Achieved Over Time (Home vs Away)",
+       x = "Date",
+       y = "Points") +
+  theme_minimal() +
+  scale_color_manual(values = c("Home" = "blue", "Away" = "red"))
+```
+
+
+
+
+## Fisher Exact test
+
+Lets follow the the null hypothesis we defined earlier to figure out if there is a significant difference in the results that is obtained at home matches and away matches
+
+```{r}
+head(data,4)
+```
+
+As a prerequisite, we will first make a contingency table would give us the values of all the possible results for Home_Win, Home_loss, Away_win and Away_loss. 
+
+
+```{r}
+contingency_table <- table(data$Home_adv, data$Result)
+contingency_table
+fisher_result <- fisher.test(contingency_table)
+fisher_result
+```
+
+The goal of the test is to identify whether there is a significant relationship between home advantage (home vs. away) and the match outcome (win vs. loss) and by observing the p-value of 0.6699 we fail to reject our null hypothesis. Hence we can suggests that there is no statistically significant association between home advantage and the result of the match (win/loss).
+
+<br>
+
+
+## Likelihood function
+
+Likelihood function is another method that we would be using to evaluate the probability of observing the data given certain parameter values for a statistical mode. Staring with calculating the overall probability of Arsenal winning a game (either Home or away) the graph can be seen below.
+
+```{r}
+
+p <- seq(from=0, to=1, len=100)
+plot(p,dbinom(12,22,p))
+abline (v=0.545454)
+```
+
+It shows that the maximum value for the probability is 0.54 as the graph maxed out with zero gradient at this value. 
+
+When checking for the probability of winning at home we observed a slight decrease from the over win probability of 0.5454 to 0.4545 as dipicted in the graph below
+
+```{r}
+
+home_games_result <- data$Result[data$Home_adv == 1]
+home_games_result
+
+p <- seq(from=0, to=1, len=100)
+plot(p,dbinom(5,11,p))
+abline(v=0.4545)
+```
+
+When observing the win percentage away from home Arsenal seems to perform much better with the probability of 0.6363 as the graph shows out max value at the point. 
+
+```{r}
+away_games_result <- data$Result[data$Home_adv == 0]
+away_games_result
+
+p <- seq(from=0, to=1, len=100)
+plot(p,dbinom(7,11,p))
+abline(v=0.6363)
+
+```
+
+
+Support function depicted below makes it quite visible how the slope is 0 at value of 0.4545.
+
+```{r}
+p <- seq(from= 0.2, to =0.8, len = 100)
+s <- dbinom(5,11,p, log = TRUE)
+plot(p,s - max(s))
+abline(h=c(0,-2))
+```
+
+
+
+## Linear Regression
+
+Last but not the least, we would be using Linear regression to evaluate our data further and this time we would be targeting trends that the data shows. First and foremost, we start by scattered graph to see the information hidden in our dataset and also because because an important statement read
+
+**THE FIRST AND NON-NEGOTIABLE STEP TO INVESTIGATING DATA OF THIS NATURE IS TO DRAW A SCATTERGRAPH. THE TECHNIQUES PRESENTED HERE ARE TOTALLY WORTHLESS IF YOU DONOT DRAW A SCATTERGRAPH. IF YOU CONDUCT A LINEAR ANALYSIS WITHOUT A SCATTERGRAPH YOU WILL GET ZERO COURSE CREDIT.**
+
+<br>
+The graph below shows the trend between the total points Arsenal obtained against the passing months during the end of their campaign. A nice linear increase can be seen 
+```{r}
+#data
+plot(Total_Points~Date, data=data)
+LR1 <- lm(Total_Points~Date,data=data)
+abline(LR1, col="red", lwd=2)
+
+summary(LR1)
+```
+
+Looking at detailed summary of the relation between the date and total points arsenal gathered, p-value of 2.2e-16 is very small (much less than 0.05), indicating that the relationship between the passage of time and the points seems to be statistically very significant BUT we donot accept that there is 100% significant relation between the two variables. Would have to work with more data to reach a proper conclusion for that. 
+
+<br>
+
+Lets look at another feature of the data set to drive some relation between the total points achieved against the point gathered in each match arsenal face. The plot shown below makes it difficult to visualise any trend from the data so we look at the p-value of the relation between the feature and find that the value of 0.2152 is much larger than the 0.05 indicating there is no significant relation between the two variables.  
+
+```{r}
+plot(Points~Total_Points, data=data)
+LR2 <-lm(Points~Total_Points,data=data)
+abline(LR2, col="red", lwd=2)
+
+summary(LR2)
+```
+
+
+
+
+## Conclusion:
+
+After performing all the analysis above it can be concluded that there is no significant difference between the results arsenal achieve at home or away from home. Student t-test failed to reject the null hypothesis and similar results were concluded from the fisher's exact test. However, there hadd been some interesting results that could be observed when applying the Likelihood function for overall probability of arsenal winning a game and at each at Home and away. 
+
+Arsenal win rate is observed to be better away from home of 0.6363 as compared to 0.4545 at home. Surprisingly, teams perform better at home as compared to away games mostly because of the fans supports and being familiar with all types of conditions(e.g weather, pitch etc) but here the results are oddly different. 
+
+Linear Regression provided us with one relation that is statistically significant. Relationship between total date and total point achieved. The p-value is 2.2e-16 which is very well below 0.05. When finding relation between total points achieved against the point gathered in each match , there relationship did not end up to be significant enough. 
+
+One of the important thing to note here is the dataset used for the analysis. Since the dataset has been very small, it includes much higher chance of large variations among the information causing difficulty in finding the credible result. Hence using a larger information set would be a very good option for future analysis. 
